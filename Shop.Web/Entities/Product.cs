@@ -6,6 +6,9 @@
     {
         public int Id { get; set; }
 
+        [Display(Name = "Name")]
+        [MaxLength(50, ErrorMessage = "The field {0} only can  contain {1} characters length.")]
+        [Required]
         public string name { get; set; }
 
         [DisplayFormat(DataFormatString = "{0:C2}", ApplyFormatInEditMode = false)]
@@ -15,10 +18,10 @@
         public string ImageUrl { get; set; }
 
         [Display(Name = "Last Purchase")]
-        public DateTime LastPurchase { get; set; }
+        public DateTime? LastPurchase { get; set; }
 
         [Display(Name = "Last Sale")]
-        public DateTime LastSale { get; set; }
+        public DateTime? LastSale { get; set; }
 
         [Display(Name = "Is availabe?")]
         public bool Isavailabe { get; set; }
