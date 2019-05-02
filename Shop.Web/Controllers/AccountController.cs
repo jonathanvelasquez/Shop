@@ -1,20 +1,29 @@
 ﻿namespace Shop.Web.Controllers
 {
+    using System;
+    using System.IdentityModel.Tokens.Jwt;
     using System.Linq;
+    using System.Security.Claims;
+    using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.AspNetCore.Mvc;
+    using Entities;
     using Helpers;
-    using Shop.Web.Models;
-    using Shop.Web.Entities;
     using Microsoft.AspNetCore.Identity;
+    using Microsoft.AspNetCore.Mvc;
+    using Microsoft.Extensions.Configuration;
+    using Microsoft.IdentityModel.Tokens;
+    using Models;   
 
     public class AccountController : Controller
     {
         private readonly IUserHelper userHelper;
+        private readonly IConfiguration configuration;
 
-        public AccountController(IUserHelper userHelper)
+        public AccountController(IUserHelper userHelper, IConfiguration configuration)
+
         {
             this.userHelper = userHelper;
+            this.configuration = configuration;
         }
 
         public IActionResult Login()
@@ -32,7 +41,7 @@
         {
             if (this.ModelState.IsValid)
             {
-                var result = await this.userHelper.LoginAsync(model);
+                Microsoft.AspNetCore.Identity.SignInResult result = await this.userHelper.LoginAsync(model);
                 if (result.Succeeded)
                 {
                     if (this.Request.Query.Keys.Contains("ReturnUrl"))
@@ -64,7 +73,7 @@
         {
             if (this.ModelState.IsValid)
             {
-                var user = await this.userHelper.GetUserByEmailAsync(model.Username);
+                User user = await this.userHelper.GetUserByEmailAsync(model.Username);
                 if (user == null)
                 {
                     user = new User
@@ -75,7 +84,7 @@
                         UserName = model.Username
                     };
 
-                    var result = await this.userHelper.AddUserAsync(user, model.Password);
+                    IdentityResult result = await this.userHelper.AddUserAsync(user, model.Password);
                     if (result != IdentityResult.Success)
                     {
                         this.ModelState.AddModelError(string.Empty, "The user couldn't be created.");
@@ -83,14 +92,14 @@
                     }
 
 
-                    var loginViewModel = new LoginViewModel
+                    LoginViewModel loginViewModel = new LoginViewModel
                     {
                         Password = model.Password,
                         RememberMe = false,
                         Username = model.Username
                     };
 
-                    var result2 = await this.userHelper.LoginAsync(loginViewModel);
+                    Microsoft.AspNetCore.Identity.SignInResult result2 = await this.userHelper.LoginAsync(loginViewModel);
 
                     if (result2.Succeeded)
                     {
@@ -109,8 +118,8 @@
 
         public async Task<IActionResult> ChangeUser()
         {
-            var user = await this.userHelper.GetUserByEmailAsync(this.User.Identity.Name);
-            var model = new ChangeUserViewModel();
+            User user = await this.userHelper.GetUserByEmailAsync(this.User.Identity.Name);
+            ChangeUserViewModel model = new ChangeUserViewModel();
             if (user != null)
             {
                 model.FirstName = user.FirstName;
@@ -125,12 +134,12 @@
         {
             if (this.ModelState.IsValid)
             {
-                var user = await this.userHelper.GetUserByEmailAsync(this.User.Identity.Name);
+                User user = await this.userHelper.GetUserByEmailAsync(this.User.Identity.Name);
                 if (user != null)
                 {
                     user.FirstName = model.FirstName;
                     user.LastName = model.LastName;
-                    var respose = await this.userHelper.UpdateUserAsync(user);
+                    IdentityResult respose = await this.userHelper.UpdateUserAsync(user);
                     if (respose.Succeeded)
                     {
                         this.ViewBag.UserMessage = "User updated!";
@@ -159,10 +168,10 @@
         {
             if (this.ModelState.IsValid)
             {
-                var user = await this.userHelper.GetUserByEmailAsync(this.User.Identity.Name);
+                User user = await this.userHelper.GetUserByEmailAsync(this.User.Identity.Name);
                 if (user != null)
                 {
-                    var result = await this.userHelper.ChangePasswordAsync(user, model.OldPassword, model.NewPassword);
+                    IdentityResult result = await this.userHelper.ChangePasswordAsync(user, model.OldPassword, model.NewPassword);
                     if (result.Succeeded)
                     {
                         return this.RedirectToAction("ChangeUser");
@@ -181,6 +190,47 @@
             return this.View(model);
         }
 
+        [HttpPost]
+        public async Task<IActionResult> CreateToken([FromBody] LoginViewModel model)
+        {
+            if (this.ModelState.IsValid)
+            {
+                User user = await this.userHelper.GetUserByEmailAsync(model.Username);
+                if (user != null)
+                {
+                    Microsoft.AspNetCore.Identity.SignInResult result = await this.userHelper.ValidatePasswordAsync(
+                        user,
+                        model.Password);
+
+                    if (result.Succeeded)
+                    {
+                        Claim[] claims = new[]
+                        {
+                    new Claim(JwtRegisteredClaimNames.Sub, user.Email),
+                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                };
+
+                        SymmetricSecurityKey key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(this.configuration["Tokens:Key"]));
+                        SigningCredentials credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+                        JwtSecurityToken token = new JwtSecurityToken(
+                            this.configuration["Tokens:Issuer"],
+                            this.configuration["Tokens:Audience"],
+                            claims,
+                            expires: DateTime.UtcNow.AddDays(15),
+                            signingCredentials: credentials);
+                        var results = new
+                        {
+                            token = new JwtSecurityTokenHandler().WriteToken(token),
+                            expiration = token.ValidTo
+                        };
+
+                        return this.Created(string.Empty, results);
+                    }
+                }
+            }
+
+            return this.BadRequest();
+        }
 
     }
 }
