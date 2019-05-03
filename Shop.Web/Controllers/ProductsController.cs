@@ -12,7 +12,7 @@
     using Shop.Web.Entities;
     using Shop.Web.Models;
 
-    [Authorize]
+    
     public class ProductsController : Controller
     {
         private readonly IProductRepository productRepository;
@@ -24,8 +24,7 @@
             this.productRepository = productRepository;
             this.userHelper = userHelper;
         }
-
-        // GET: Products
+    
         public IActionResult Index()
         {
             return View(this.productRepository.GetAll().OrderBy(p => p.name));
@@ -36,25 +35,25 @@
         {
             if (id == null)
             {
-                return NotFound();
+                return new NotFoundViewResult("ProductNotFound");
             }
 
             var product = await this.productRepository.GetByIdAsync(id.Value);
             if (product == null)
             {
-                return NotFound();
+                return new NotFoundViewResult("ProductNotFound");
             }
 
             return View(product);
         }
 
+        [Authorize(Roles = "Admin")]
         // GET: Products/Create
         public IActionResult Create()
         {
             return View();
         }
-
-        // POST: Products/Create
+       
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ProductViewModel view)
@@ -106,6 +105,7 @@
             };
         }
 
+        [Authorize(Roles = "Admin")]
         // GET: Products/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
@@ -190,6 +190,7 @@
             return View(view);
         }
 
+        [Authorize(Roles = "Admin")]
         // GET: Products/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
@@ -216,6 +217,12 @@
             await this.productRepository.DeleteAsync(product);
             return RedirectToAction(nameof(Index));
         }
+
+        public IActionResult ProductNotFound()
+        {
+            return this.View();
+        }
+
 
     }
 }
