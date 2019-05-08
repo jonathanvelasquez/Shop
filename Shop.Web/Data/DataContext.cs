@@ -2,6 +2,7 @@
 {
     using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
     using Microsoft.EntityFrameworkCore;
+    using Shop.Web.Data.Entities;
     using Shop.Web.Entities;
     using System.Linq;
 
@@ -10,6 +11,13 @@
         public DbSet<Product> Products { get; set; }
 
         public DbSet<Country> Countries { get; set; }
+
+        public DbSet<Order> Orders { get; set; }
+
+        public DbSet<OrderDetail> OrderDetails { get; set; }
+
+        public DbSet<OrderDetailTemp> OrderDetailTemps { get; set; }
+
 
         public DataContext(DbContextOptions<DataContext> options) : base(options)
         {

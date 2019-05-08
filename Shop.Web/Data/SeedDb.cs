@@ -3,9 +3,9 @@
     using System;
     using System.Linq;
     using System.Threading.Tasks;
-    using Entities;
     using Microsoft.AspNetCore.Identity;
     using Helpers;
+    using Shop.Web.Entities;
 
     public class SeedDb
     {

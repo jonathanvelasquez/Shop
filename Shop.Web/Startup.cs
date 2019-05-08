@@ -13,6 +13,7 @@
     using Helpers;
     using Microsoft.IdentityModel.Tokens;
     using System.Text;
+    using Shop.Web.Data.Repositories;
 
     public class Startup
     {
@@ -60,7 +61,8 @@
             services.AddTransient<SeedDb>();
             services.AddScoped<IUserHelper, UserHelper>();
             services.AddScoped<IProductRepository, ProductRepository>();
-            services.AddScoped<ICountryRepository, CountryRepository>();
+            services.AddScoped<IOrderRepository, OrderRepository>();
+            //services.AddScoped<ICountryRepository, CountryRepository>();
 
             services.Configure<CookiePolicyOptions>(options =>
             {
