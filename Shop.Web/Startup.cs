@@ -62,7 +62,7 @@
             services.AddScoped<IUserHelper, UserHelper>();
             services.AddScoped<IProductRepository, ProductRepository>();
             services.AddScoped<IOrderRepository, OrderRepository>();
-            //services.AddScoped<ICountryRepository, CountryRepository>();
+            services.AddScoped<ICountryRepository, CountryRepository>();
 
             services.Configure<CookiePolicyOptions>(options =>
             {
