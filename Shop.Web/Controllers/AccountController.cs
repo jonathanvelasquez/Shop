@@ -20,13 +20,19 @@
         private readonly IUserHelper userHelper;
         private readonly IConfiguration configuration;
         private readonly ICountryRepository countryRepository;
+        private readonly IMailHelper mailHelper;
 
-        public AccountController(IUserHelper userHelper, IConfiguration configuration,ICountryRepository countryRepository)
+        public AccountController(
+            IUserHelper userHelper, 
+            IConfiguration configuration,
+            ICountryRepository countryRepository,
+            IMailHelper mailHelper)
 
         {
             this.userHelper = userHelper;
             this.configuration = configuration;
             this.countryRepository = countryRepository;
+            this.mailHelper = mailHelper;
         }
 
         public IActionResult Login()
@@ -82,7 +88,7 @@
         {
             if (this.ModelState.IsValid)
             {
-                User user = await this.userHelper.GetUserByEmailAsync(model.Username);
+                var user = await this.userHelper.GetUserByEmailAsync(model.Username);
                 if (user == null)
                 {
                     var city = await this.countryRepository.GetCityAsync(model.CityId);
@@ -99,29 +105,24 @@
                         City = city
                     };
 
-                    IdentityResult result = await this.userHelper.AddUserAsync(user, model.Password);
+                    var result = await this.userHelper.AddUserAsync(user, model.Password);
                     if (result != IdentityResult.Success)
                     {
                         this.ModelState.AddModelError(string.Empty, "The user couldn't be created.");
                         return this.View(model);
                     }
 
-
-                    LoginViewModel loginViewModel = new LoginViewModel
+                    var myToken = await this.userHelper.GenerateEmailConfirmationTokenAsync(user);
+                    var tokenLink = this.Url.Action("ConfirmEmail", "Account", new
                     {
-                        Password = model.Password,
-                        RememberMe = false,
-                        Username = model.Username
-                    };
+                        userid = user.Id,
+                        token = myToken
+                    }, protocol: HttpContext.Request.Scheme);
 
-                    Microsoft.AspNetCore.Identity.SignInResult result2 = await this.userHelper.LoginAsync(loginViewModel);
-
-                    if (result2.Succeeded)
-                    {
-                        return this.RedirectToAction("Index", "Home");
-                    }
-
-                    this.ModelState.AddModelError(string.Empty, "The user couldn't be login.");
+                    this.mailHelper.SendMail(model.Username, "Shop email confirmation", $"<h1>Email Confirmation</h1>" +
+                    $"To allow the user, " +
+                    $"plase click in this link:</br></br><a href = \"{tokenLink}\">Confirm Email</a>");
+                    this.ViewBag.Message = "The instructions to allow your user has been sent to email.";
                     return this.View(model);
                 }
 
@@ -130,6 +131,7 @@
 
             return this.View(model);
         }
+
 
         public async Task<IActionResult> ChangeUser()
         {
@@ -283,6 +285,29 @@
             var country = await this.countryRepository.GetCountryWithCitiesAsync(countryId);
             return this.Json(country.Cities.OrderBy(c => c.Name));
         }
+
+        public async Task<IActionResult> ConfirmEmail(string userId, string token)
+        {
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
+            {
+                return this.NotFound();
+            }
+
+            var user = await this.userHelper.GetUserByIdAsync(userId);
+            if (user == null)
+            {
+                return this.NotFound();
+            }
+
+            var result = await this.userHelper.ConfirmEmailAsync(user, token);
+            if (!result.Succeeded)
+            {
+                return this.NotFound();
+            }
+
+            return View();
+        }
+
 
     }
 }

@@ -53,15 +53,15 @@
             }
 
 
-            var user = await this.userHelper.GetUserByEmailAsync("jonathanalberto123@hotmail.com");
+            var user = await this.userHelper.GetUserByEmailAsync("jonathanvelasquez687@gmail.com");
             if (user == null)
             {
                 user = new User
                 {
                     FirstName = "Jonathan",
                     LastName = "Velasquez",
-                    Email = "jonathanalberto123@hotmail.com",
-                    UserName = "jonathanalberto123@hotmail.com",
+                    Email = "jonathanvelasquez687@gmail.com",
+                    UserName = "jonathanvelasquez687@gmail.com",
                     PhoneNumber = "3212395136",
                     Address = "Calle Luna Calle Sol",
                     CityId = this.context.Countries.FirstOrDefault().Cities.FirstOrDefault().Id,
@@ -76,6 +76,9 @@
                 }
 
                 await this.userHelper.AddUserToRoleAsync(user, "Admin");
+                var token = await this.userHelper.GenerateEmailConfirmationTokenAsync(user);
+                await this.userHelper.ConfirmEmailAsync(user, token);
+
             }
 
             var isInRole = await this.userHelper.IsUserInRoleAsync(user, "Admin");
