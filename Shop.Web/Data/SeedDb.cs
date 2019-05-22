@@ -3,9 +3,11 @@
     using System;
     using System.Linq;
     using System.Threading.Tasks;
-    using Entities;
     using Microsoft.AspNetCore.Identity;
     using Helpers;
+    using Shop.Web.Entities;
+    using System.Collections.Generic;
+    using Shop.Web.Data.Entities;
 
     public class SeedDb
     {
@@ -31,16 +33,40 @@
         {
             await this.context.Database.EnsureCreatedAsync();
 
-            var user = await this.userHelper.GetUserByEmailAsync("jonathanalberto123@hotmail.com");
+            await this.userHelper.CheckRoleAsync("Admin");
+            await this.userHelper.CheckRoleAsync("Customer");
+
+            if (!this.context.Countries.Any())
+            {
+                var cities = new List<City>();
+                cities.Add(new City { Name = "Medellín" });
+                cities.Add(new City { Name = "Bogotá" });
+                cities.Add(new City { Name = "Calí" });
+
+                this.context.Countries.Add(new Country
+                {
+                    Cities = cities,
+                    Name = "Colombia"
+                });
+
+                await this.context.SaveChangesAsync();
+            }
+
+
+            var user = await this.userHelper.GetUserByEmailAsync("jonathanvelasquez687@gmail.com");
             if (user == null)
             {
                 user = new User
                 {
                     FirstName = "Jonathan",
                     LastName = "Velasquez",
-                    Email = "jonathanalberto123@hotmail.com",
-                    UserName = "jonathanalberto123@hotmail.com",
-                    PhoneNumber = "3212395136"
+                    Email = "jonathanvelasquez687@gmail.com",
+                    UserName = "jonathanvelasquez687@gmail.com",
+                    PhoneNumber = "3212395136",
+                    Address = "Calle Luna Calle Sol",
+                    CityId = this.context.Countries.FirstOrDefault().Cities.FirstOrDefault().Id,
+                    City = this.context.Countries.FirstOrDefault().Cities.FirstOrDefault()
+
                 };
 
                 var result = await this.userHelper.AddUserAsync(user, "balin2335394");
@@ -48,6 +74,17 @@
                 {
                     throw new InvalidOperationException("Could not create the user in seeder");
                 }
+
+                await this.userHelper.AddUserToRoleAsync(user, "Admin");
+                var token = await this.userHelper.GenerateEmailConfirmationTokenAsync(user);
+                await this.userHelper.ConfirmEmailAsync(user, token);
+
+            }
+
+            var isInRole = await this.userHelper.IsUserInRoleAsync(user, "Admin");
+            if (!isInRole)
+            {
+                await this.userHelper.AddUserToRoleAsync(user, "Admin");
             }
 
             if (!this.context.Products.Any())

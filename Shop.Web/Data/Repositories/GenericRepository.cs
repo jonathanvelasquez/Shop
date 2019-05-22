@@ -2,8 +2,8 @@
 {
     using System.Linq;
     using System.Threading.Tasks;
-    using Entities;
     using Microsoft.EntityFrameworkCore;
+    using Shop.Web.Entities;
 
     public class GenericRepository<T> : IGenericRepository<T> where T : class, IEntity
     {
