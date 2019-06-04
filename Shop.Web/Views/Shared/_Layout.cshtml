@@ -42,12 +42,15 @@
                         @if (this.User.Identity.IsAuthenticated)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Orders" asp-action="Index">Orders</a class="nav-link>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Orders" asp-action="Index">Orders</a>
                             </li>
                             @if (this.User.IsInRole("Admin"))
                             {
                                 <li class="nav-item">
                                     <a class="nav-link text-dark" asp-area="" asp-controller="Countries" asp-action="Index">Countries</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Account" asp-action="Index">Users</a>
                                 </li>
                             }
                         }
@@ -66,15 +69,14 @@
                         }
                         else
                         {
-                            <li>
-                                <a asp-area="" asp-controller="Account" asp-action="Login">Login</a>
+                            <li class="nav-item">
+                                <a class="nav-link text-primary" asp-area="" asp-controller="Account" asp-action="Login">Login</a>
                             </li>
                         }
                     </ul>
                 </div>
-                   
-                </div>
-</nav>
+            </div>
+         </nav>
     </header>
     <div class="container">
         <partial name="_CookieConsentPartial" />
